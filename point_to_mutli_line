@@ -1,0 +1,27 @@
+__author__ = 'aschwenker'
+import psycopg2
+import json
+import cherrypy
+
+
+class gpsroute(object):
+    def gpsroute(self,route):
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        pgcnxn = psycopg2.connect(host="localhost", database="AKSchwenker", user="postgres", password="postgres")
+        cursor = pgcnxn.cursor()
+        query="SELECT longitude, latitude FROM nov16_joined WHERE route ='"+route+"' ORDER BY odometer asc;"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        results = { "type": "LineString","coordinates":[]}
+        x=[]
+
+        for row in rows:
+            x.append([float(row[0]),float(row[1])])
+        results["coordinates"]=x
+        return json.dumps(results)
+
+
+    gpsroute.exposed= True
+
+
+cherrypy.quickstart(gpsroute())
