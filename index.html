@@ -1,0 +1,115 @@
+﻿<html>
+<head>
+    <title>Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.11/themes/css/cartodb.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="jquery-csv.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #sidebar {
+            position: fixed;
+            width: 18%;
+            height: 100%;
+            padding: 10px 20px;
+            font: 1em Arial, Helvetica, sans-serif;
+            color: white;
+            background: #36454f;
+            box-shadow: 0 15px 15px 0 rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+
+        #map {
+            height: 100%;
+            width: 80%;
+            float: right;
+            clear: none;
+        }
+        #dvImportSegments {
+            position :fixed;
+        }
+
+    </style>
+    <script>
+        // When the webpage is ready (loaded)
+        $(document).ready(function () {
+            var map = new L.Map('map',
+                {   center:[40.75, -73.95],
+                    zoom: 12
+                });
+            // Credit where credit is due
+            var attribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>';
+
+            // Change this url to use different set of map tiles
+            var basemap_url = 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'
+
+            // add basemap
+            basemap = new L.TileLayer(basemap_url, {
+                maxZoom: 21,
+                attribution: attribution
+            });
+            map.addLayer(basemap);
+            
+            {
+
+                // The event listener for the file upload
+                document.getElementById('txtFileUpload').addEventListener('change', upload, false);
+
+                // Method that checks that the browser supports the HTML5 File API
+                function browserSupportFileUpload() {
+                    var isCompatible = false;
+                    if (window.File && window.FileReader && window.FileList && window.Blob) {
+                        isCompatible = true;
+                    }
+                    return isCompatible;
+                }
+
+                // Method that reads and processes the selected file
+                function upload(evt) {
+                    if (!browserSupportFileUpload()) {
+                        alert('The File APIs are not fully supported in this browser!');
+                    } else {
+                        var data = null;
+                        var file = evt.target.files[0];
+                        var reader = new FileReader();
+                        reader.readAsText(file);
+                        reader.onload = function(event) {
+                            var csvData = event.target.result;
+                            data = $.csv.toArrays(csvData);
+                            if (data && data.length > 0) {
+                                alert('Imported -' + data.length + '- rows successfully!');
+                            } else {
+                                alert('No data to import!');
+                            }
+                        };
+                        reader.onerror = function() {
+                            alert('Unable to read ' + file.fileName);
+                        };
+                    }
+                }
+            };
+
+            
+        });
+    </script>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>GPS</h1>
+        <div id="dvImportSegments" class="fileupload ">
+            <fieldset>
+                <legend>Upload your CSV File</legend>
+                <input type="file" name="File Upload" id="txtFileUpload" accept=".csv" />
+            </fieldset>
+        </div>
+    </div>
+    <div id="map">
+    </div>
+</body>
+</html>
