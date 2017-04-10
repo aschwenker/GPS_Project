@@ -5,7 +5,7 @@
     <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
     <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.11/themes/css/cartodb.css" />
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="jquery-csv.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.3/jquery.csv.min.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -13,9 +13,10 @@
             padding: 0;
         }
 
+
         #sidebar {
             position: fixed;
-            width: 18%;
+            width: 25%;
             height: 100%;
             padding: 10px 20px;
             font: 1em Arial, Helvetica, sans-serif;
@@ -27,7 +28,7 @@
 
         #map {
             height: 100%;
-            width: 80%;
+            width: 75%;
             float: right;
             clear: none;
         }
@@ -55,61 +56,56 @@
                 attribution: attribution
             });
             map.addLayer(basemap);
-            
-            {
 
-                // The event listener for the file upload
-                document.getElementById('txtFileUpload').addEventListener('change', upload, false);
 
-                // Method that checks that the browser supports the HTML5 File API
-                function browserSupportFileUpload() {
-                    var isCompatible = false;
-                    if (window.File && window.FileReader && window.FileList && window.Blob) {
-                        isCompatible = true;
-                    }
-                    return isCompatible;
-                }
-
-                // Method that reads and processes the selected file
-                function upload(evt) {
-                    if (!browserSupportFileUpload()) {
-                        alert('The File APIs are not fully supported in this browser!');
-                    } else {
-                        var data = null;
-                        var file = evt.target.files[0];
-                        var reader = new FileReader();
-                        reader.readAsText(file);
-                        reader.onload = function(event) {
-                            var csvData = event.target.result;
-                            data = $.csv.toArrays(csvData);
-                            if (data && data.length > 0) {
-                                alert('Imported -' + data.length + '- rows successfully!');
-                            } else {
-                                alert('No data to import!');
-                            }
-                        };
-                        reader.onerror = function() {
-                            alert('Unable to read ' + file.fileName);
-                        };
-                    }
-                }
-            };
-
-            
+            $.getJSON("C:/Users/ASchwenker/Documents/GitHub/GPS_Project/apriltest.geojson", function (data) {
+            var geojsonlayer = L.geoJson(data, { style: speedstyle});
+            geojsonlayer.addTo(map);
         });
+            //create a ramp for the traveltimes
+        function getColor(distance) {
+            return distance > .5 ? '#b30000' : //7
+                   distance > 1 ? '#e34a33' : //6
+                   distance > 3 ? '#fc8d59' : //5
+                   distance > 6 ? '#fdcc8a' : //4
+                              '#e34a33'; //less than 3
+        }
+
+
+            // Style hexbins
+        function speedstyle(feature) {
+            return {
+                fillOpacity: 0.15,
+                weight: 5,
+                opacity: 1,
+                color: getColor(feature.properties.distance)
+            };
+        }
+
+        });
+
     </script>
 </head>
 <body>
     <div id="sidebar">
         <h1>GPS</h1>
-        <div id="dvImportSegments" class="fileupload ">
-            <fieldset>
-                <legend>Upload your CSV File</legend>
-                <input type="file" name="File Upload" id="txtFileUpload" accept=".csv" />
-            </fieldset>
-        </div>
+      <div id="dvImportSegments" class="fileupload ">
+        <form action='localhost:8080/upload' method="post" enctype="multipart/form-data">
+
+        <input type="file" name="ufile" id="fileToUpload">
+        <input type="submit" value="Submit" name="submit">
+    </form>
+</div>
+
     </div>
     <div id="map">
     </div>
 </body>
 </html>
+
+<div>
+    <label>Upload Sound:</label>
+    <input id="pathSound" style="width: 80%" type="file" accept=".csv" /><br>
+    <button id="uploadSound">Upload</button>
+</div>
+

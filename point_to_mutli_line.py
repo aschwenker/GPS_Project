@@ -2,8 +2,13 @@ import psycopg2
 import json
 import numpy as np
 import pandas as pd
-
-
+import os, os.path
+import cherrypy
+from cherrypy.process import  plugins
+path = os.getcwd()
+print path
+#class gpsroute(object):
+    #@cherrypy.expose
 def gpsroute():
     pgcnxn = psycopg2.connect(host="localhost", database="postgres", user="postgres", password="postgres")
     cursor = pgcnxn.cursor()
@@ -30,9 +35,8 @@ def gpsroute():
         valuedict["properties"]["distance"] = distance
         featurelist.append(valuedict)
     results["features"] = featurelist
-    with open("apriltest.geojson", 'w') as outfile:
-        json.dump(results, outfile)
-    outfile.close()
+    print json.dumps(results)
+
 
 def haversine_np(x):
     """
@@ -58,4 +62,43 @@ def haversine_np(x):
     return km
 
 
-gpsroute()
+"""class MagicBoxInterface(object):
+
+    @cherrypy.expose
+    def index(self):
+        return file('index.html')
+        print "file returned"
+
+    @cherrypy.expose
+    def uploadSound(self,  cardID='', myFile=None):
+        print 'uploadSound : ',  cardID
+        print 'uploadSound : ',  myFile
+        return ''"""
+
+class Root(object):
+
+    @cherrypy.expose
+    def index(self):
+        return file('C:\Users\ASchwenker\Documents\GitHub\GPS_Project\index.html')
+    @cherrypy.expose
+    def upload(self, ufile):
+        upload_path = os.path.normpath('C:\Users\ASchwenker\Documents\GitHub\GPS_Project')
+        upload_file = os.path.join(upload_path, ufile.filename)
+        size = 0
+        with open(upload_file, 'wb') as out:
+            while True:
+                data = ufile.file.read(8192)
+                if not data:
+                    break
+                out.write(data)
+                size += len(data)
+        out = '''
+           length: {}
+           filename: {}
+           mime-type: {}
+              ''' .format(size, ufile.filename, ufile.content_type, data)
+        return out
+
+#gpsroute()
+cherrypy.quickstart(Root(), '/')
+#cherrypy.quickstart(gpsroute(),'/')
