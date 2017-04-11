@@ -3,9 +3,10 @@
     <title>Demo</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+
     <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.11/themes/css/cartodb.css" />
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.8.3/jquery.csv.min.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -13,10 +14,9 @@
             padding: 0;
         }
 
-
         #sidebar {
             position: fixed;
-            width: 25%;
+            width: 30%;
             height: 100%;
             padding: 10px 20px;
             font: 1em Arial, Helvetica, sans-serif;
@@ -28,15 +28,55 @@
 
         #map {
             height: 100%;
-            width: 75%;
+            width: 70%;
             float: right;
             clear: none;
         }
-        #dvImportSegments {
-            position :fixed;
+
+
+        .info {
+            width: 12vw;
+            height: auto;
+            float: right;
+            padding: 10px 10px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,.90);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
         }
 
+            .info h4 {
+                margin: 0 0 5px;
+                color: #777;
+            }
+
+        .legend {
+            color: #555;
+            height: auto;
+        }
+
+            .legend ul {
+                padding: 0px;
+                margin: 0px;
+            }
+
+            .legend i {
+                width: 18px;
+                height: 18px;
+                float: left;
+                margin-right: 8px;
+                opacity: 0.7;
+            }
+
+            .legend li {
+                height: 18px;
+                list-style: none;
+            }
     </style>
+
+</head>
+<body>
     <script>
         // When the webpage is ready (loaded)
         $(document).ready(function () {
@@ -57,55 +97,51 @@
             });
             map.addLayer(basemap);
 
-
-            $.getJSON("C:/Users/ASchwenker/Documents/GitHub/GPS_Project/apriltest.geojson", function (data) {
-            var geojsonlayer = L.geoJson(data, { style: speedstyle});
-            geojsonlayer.addTo(map);
-        });
-            //create a ramp for the traveltimes
-        function getColor(distance) {
-            return distance > .5 ? '#b30000' : //7
-                   distance > 1 ? '#e34a33' : //6
-                   distance > 3 ? '#fc8d59' : //5
-                   distance > 6 ? '#fdcc8a' : //4
-                              '#e34a33'; //less than 3
-        }
-
-
-            // Style hexbins
-        function speedstyle(feature) {
-            return {
-                fillOpacity: 0.15,
-                weight: 5,
-                opacity: 1,
-                color: getColor(feature.properties.distance)
-            };
-        }
+            // Add a scalebar
+            L.control.scale({ maxWidth: 300 }).addTo(map);
 
         });
-
-    </script>
-</head>
-<body>
+</script>
     <div id="sidebar">
         <h1>GPS</h1>
-      <div id="dvImportSegments" class="fileupload ">
-        <form action='localhost:8080/upload' method="post" enctype="multipart/form-data">
-
-        <input type="file" name="ufile" id="fileToUpload">
-        <input type="submit" value="Submit" name="submit">
-    </form>
-</div>
+        <form id='upload' action=''>
+            <label for='fileselect'>Files to upload:</label>
+            <input type='file' id='fileselect' multiple='multiple' />
+        </form>
 
     </div>
-    <div id="map">
-    </div>
+    <div id="map"></div>
+    <script>
+        function upload(file) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function (event) {
+                console.log('progess', file.name, event.loaded, event.total);
+            });
+            xhr.addEventListener('readystatechange', function (event) {
+                console.log(
+                  'ready state',
+                  file.name,
+                  xhr.readyState,
+                  xhr.readyState == 4 && xhr.status
+                );
+            });
+
+            xhr.open('POST', '/upload', true);
+            xhr.setRequestHeader('X-Filename', file.name);
+
+            console.log('sending', file.name, file);
+            xhr.send(file);
+        }
+
+        var select = document.getElementById('fileselect');
+        var form = document.getElementById('upload')
+        select.addEventListener('change', function (event) {
+            for (var i = 0; i < event.target.files.length; i += 1) {
+                upload(event.target.files[i]);
+            }
+            form.reset();
+        });
+    </script>
 </body>
 </html>
-
-<div>
-    <label>Upload Sound:</label>
-    <input id="pathSound" style="width: 80%" type="file" accept=".csv" /><br>
-    <button id="uploadSound">Upload</button>
-</div>
-
