@@ -66,7 +66,7 @@ def Haversine(lon,lat):
         lat2 = lat[x-1]
 
         # convert decimal degrees to
-        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
 
         # haversine formula
         dlon = lon2 - lon1
