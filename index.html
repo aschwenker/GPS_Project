@@ -1,6 +1,6 @@
 ﻿<html>
 <head>
-    <title>Demo</title>
+    <title>GPS Uploader</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
 
@@ -99,6 +99,11 @@
 
             // Add a scalebar
             L.control.scale({ maxWidth: 300 }).addTo(map);
+            $.getJSON("http://localhost:8080/upload ", function (data) {
+                var geojsonLayer = L.geoJson(data);
+                geojsonLayer.addTo(map);
+            });
+
 
         });
 </script>
@@ -110,7 +115,9 @@
         </form>
 
     </div>
-    <div id="map"></div>
+    <div id="map">
+        <div id="geojsonlayer"></div>
+    </div>
     <script>
         function upload(file) {
             var xhr = new XMLHttpRequest();

@@ -1,35 +1,45 @@
-import psycopg2
 import json
 import numpy as np
 import pandas as pd
-import os, os.path
+import os
 import cherrypy
-from cherrypy.process import  plugins
-path = os.getcwd()
-print path
-#class gpsroute(object):
-    #@cherrypy.expose
-def gpsroute():
-    pgcnxn = psycopg2.connect(host="localhost", database="postgres", user="postgres", password="postgres")
-    cursor = pgcnxn.cursor()
-    query="SELECT longitude, latitude FROM oct18_K082 ORDER BY odometer asc;"
-    cursor.execute(query)
-    rows = cursor.fetchall()
+
+import shutil
+
+config = {
+  'global' : {
+    'server.socket_host' : '127.0.0.1',
+    'server.socket_port' : 8080,
+    'server.thread_pool' : 8,
+  }
+}
+
+
+def gpsroute(csv):
+
+        
+
     results ={"type":"FeatureCollection","features":[]}
     x={}
     featurelist = []
     lonlatlist = []
-
-    for row in rows:
-        lonlatlist.append([float(row[0]),float(row[1])])
-    print lonlatlist
+    latlonlist = []
+    with open(csv) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            lonlatlist.append([float(row[0]),float(row[1]),float(row[2])])
+        lonlatlist =sorted(lonlatlist, key=lambda x: x[2])
+        for listlon in lonlatlist:
+            latlon=((listlon[0],listlon[1]))
+        latlonlist.append(latlon)
+        print lonlatlist
     
-    lonLatLength = len(lonlatlist)
+    lonLatLength = len(latlonlist)
     for i in range(1,lonLatLength-1):
         valuedict = {"type": "Feature","geometry":{"type" : "LineString","coordinates":[]},"properties":{"distance":""} }
         a = i
         b = i + 1
-        x=lonlatlist[a],lonlatlist[b]
+        x=latlonlist[a],latlonlist[b]
         distance = haversine_np(x)
         valuedict["geometry"]["coordinates"] =x
         valuedict["properties"]["distance"] = distance
@@ -60,45 +70,26 @@ def haversine_np(x):
     c = 2 * np.arcsin(np.sqrt(a))
     km = 6367 * c
     return km
-
-
-"""class MagicBoxInterface(object):
-
+    
+    
+class App:
     @cherrypy.expose
     def index(self):
-        return file('index.html')
-        print "file returned"
-
+        return file('H:/CLASS/GTECH734/testuploader/index.html')
     @cherrypy.expose
-    def uploadSound(self,  cardID='', myFile=None):
-        print 'uploadSound : ',  cardID
-        print 'uploadSound : ',  myFile
-        return ''"""
+    def upload(self):
+        '''Handle non-multipart upload'''
 
-class Root(object):
+        filename    = os.path.basename(cherrypy.request.headers['x-filename'])
+        destination = os.path.join('/Users/ASchwenker/Desktop', filename)
+        with open(destination, 'wb') as f:
+            shutil.copyfileobj(cherrypy.request.body, f)
+        
 
-    @cherrypy.expose
-    def index(self):
-        return file('C:\Users\ASchwenker\Documents\GitHub\GPS_Project\index.html')
-    @cherrypy.expose
-    def upload(self, ufile):
-        upload_path = os.path.normpath('C:\Users\ASchwenker\Documents\GitHub\GPS_Project')
-        upload_file = os.path.join(upload_path, ufile.filename)
-        size = 0
-        with open(upload_file, 'wb') as out:
-            while True:
-                data = ufile.file.read(8192)
-                if not data:
-                    break
-                out.write(data)
-                size += len(data)
-        out = '''
-           length: {}
-           filename: {}
-           mime-type: {}
-              ''' .format(size, ufile.filename, ufile.content_type, data)
-        return out
+
+if __name__ == '__main__':
+  cherrypy.quickstart(App(), '/', config)
+        
 
 #gpsroute()
-cherrypy.quickstart(Root(), '/')
-#cherrypy.quickstart(gpsroute(),'/')
+
