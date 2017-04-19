@@ -96,13 +96,15 @@
                 attribution: attribution
             });
             map.addLayer(basemap);
+            $.getJSON("http://localhost:8080/upload", function (data) {
+                var geojson = L.geoJson(data).addTo(map);
+                map.fitBounds(geojson.getBounds());
+            });
+
 
             // Add a scalebar
             L.control.scale({ maxWidth: 300 }).addTo(map);
-            $.getJSON("http://localhost:8080/upload ", function (data) {
-                var geojsonLayer = L.geoJson(data);
-                geojsonLayer.addTo(map);
-            });
+
 
 
         });
@@ -116,7 +118,7 @@
 
     </div>
     <div id="map">
-        <div id="geojsonlayer"></div>
+        
     </div>
     <script>
         function upload(file) {
