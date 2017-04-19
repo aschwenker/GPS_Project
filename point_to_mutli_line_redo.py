@@ -41,10 +41,12 @@ def haversine_np(x):
     c = 2 * np.arcsin(np.sqrt(a))
     km = 6367 * c
     return km
-    
+   
+     
 def gpsroute(uploadlist):
-    #uploadlist=[]
-    #uploadlist = file_content.split('\n') 
+    """Takes in the gps data as a list, reads it and enriches it.
+    then returns a geojson feature collection of line segments between each lat,lon given"""
+
     results ={"type":"FeatureCollection","features":[]}
     x={}
     featurelist = []
@@ -54,16 +56,18 @@ def gpsroute(uploadlist):
     for x in xlist:
         row =uploadlist[x]
         row = row.split(",")
-        #print row
-        #print type(row)
         lonlatlist.append([row[1],row[2],row[25]])
-        #print lonlatlist
+        #lat, lon, odometer
     lonlatlist =sorted(lonlatlist, key=lambda x: x[2])
+    #sorts on odometer
     for listlon in lonlatlist:
         latlon=((listlon[0],listlon[1]))
+        #tuple
         time = float(listlon[2])
+        #odometer not time
         appenditem=(latlon,time)
         latlonlist.append(appenditem)
+        #list of ((lat,lon),odometer)
     
     lonLatLength = len(latlonlist)
     print lonLatLength
@@ -109,67 +113,23 @@ def gpsroute(uploadlist):
 class App:
     @cherrypy.expose
     def index(self):
+        """loads the index file"""
         return file('C:/Users/ASchwenker/Documents/GitHub/GPS_Project/index.html')
     @cherrypy.expose
     def geo(self):
+        """used as a static geojson sample to test html geojson link load worked"""
         return file('C:/Users/ASchwenker/Documents/GitHub/GPS_Project/apriltest.geojson')
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def upload(self):
+        """uploads csv from request, creates 
+        list of data and calls gsproute to return geojson"""
         upload = cherrypy.request.body.read()
         print type(upload)
         uploadlist=[]
         uploadlist = upload.split('\n')
 
         return gpsroute(uploadlist)
-
-    
-    """@cherrypy.expose
-    def gpsroute(self):
-        upload = cherrypy.request.body.read()
-        #return upload
-        #upload = self.upload()
-        print upload
-        uploadlist=[]
-        uploadlist = upload.split('\n')
-        
-        results ={"type":"FeatureCollection","features":[]}
-        x={}
-        featurelist = []
-        lonlatlist = []
-        latlonlist = [] 
-        xlist=[x for x in range(1,len(uploadlist))]
-        for x in xlist:
-            row =uploadlist[x]
-            row = row.split(",")
-            #print row
-            #print type(row)
-            lonlatlist.append([row[1],row[2],row[25]])
-            #print lonlatlist
-        lonlatlist =sorted(lonlatlist, key=lambda x: x[2])
-        for listlon in lonlatlist:
-            latlon=((listlon[0],listlon[1]))
-            latlonlist.append(latlon)
-        
-        lonLatLength = len(latlonlist)
-        for i in range(1,lonLatLength-1):
-            valuedict = {"type": "Feature","geometry":{"type" : "LineString","coordinates":[]},"properties":{"distance":""} }
-            a = i
-            b = i + 1
-            x=latlonlist[a],latlonlist[b]
-            latinput =x[0][0]
-            longlatinput = float(latinput)
-            distance = haversine_np(x)
-            valuedict["geometry"]["coordinates"] =x
-            valuedict["properties"]["distance"] = distance
-            featurelist.append(valuedict)
-        results["features"] = featurelist
-        geojson = json.dumps(results)
-        print geojson"""
-        
-
-    
-        
 
 #gpsroute(csv)
 if __name__ == '__main__':
