@@ -1,5 +1,3 @@
-import os
-import sys
 import csv
 import datetime
 from math import radians, cos, sin, asin, sqrt
