@@ -96,10 +96,35 @@
                 attribution: attribution
             });
             map.addLayer(basemap);
-            $.getJSON("http://localhost:8080/upload", function (data) {
-                var geojson = L.geoJson(data).addTo(map);
+            $.getJSON("http://localhost:8080/geo", function (data) {
+                var geojson = L.geoJson(data, {
+                    style: hexstyle, onEachFeature: function (feature, layer) {
+                        layer.bindPopup('distance '+ layer.feature.properties.distance);
+                    }
+                }).addTo(map);
                 map.fitBounds(geojson.getBounds());
             });
+
+            //create a ramp for the traveltimes
+            function getColor(min) {
+                return min > 5 ? '#00cc33' :
+                       min > 3? '#00cc00' :
+                       min > 1 ? '#0099ff' :
+                       min > .5 ? '#0099cc' :
+                                  '#009999';
+            }
+
+
+            // Style hexbins
+            function hexstyle(feature) {
+                return {
+                    fillOpacity: 0.15,
+                    weight: 3,
+                    opacity: 1,
+                    color: getColor(feature.properties.distance)
+                };
+            }
+
 
 
             // Add a scalebar
@@ -115,6 +140,7 @@
             <label for='fileselect'>Files to upload:</label>
             <input type='file' id='fileselect' multiple='multiple' />
         </form>
+        <input type="button" value="Display GPS Route" onClick="window.location.reload()">
 
     </div>
     <div id="map">
