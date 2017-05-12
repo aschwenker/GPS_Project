@@ -18,7 +18,10 @@ config = {
   'global' : {
     'server.socket_host' : '127.0.0.1',
     'server.socket_port' : 8080,
-    'server.thread_pool' : 8
+    'server.thread_pool' : 8,
+    'server.environment' : "production",
+    'engine.autoreload_on' : True,
+    'engine.autoreload_frequency' : 60
   }
 }
 
@@ -89,12 +92,12 @@ def gpsroute(destination):
         a = i
         b = i + 1
         x=latlonlist[a][0],latlonlist[b][0]
-        distance = haversine_np(x)
+        distance = round(haversine_np(x),2)
         time = latlonlist[b][1]-latlonlist[a][1]
         duration = time.seconds
         duration = (duration/60)
         if duration > 0:
-            speed = float(distance)/float(duration)
+            speed = round((float(distance)/float(duration)),2)
         else:
             speed = 0
         x=latlonlist[a][0],latlonlist[b][0]
