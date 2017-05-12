@@ -16,7 +16,7 @@
 
         #sidebar {
             position: fixed;
-            width: 30%;
+            width: 17%;
             height: 100%;
             padding: 10px 20px;
             font: 1em Arial, Helvetica, sans-serif;
@@ -25,10 +25,39 @@
             box-shadow: 0 15px 15px 0 rgba(0,0,0,0.4);
             z-index: 2;
         }
+        #sidebarnav {
+            position: relative;
+            width: 50%;
+            background-color: #25BAFA;
+            border-left-style: 2px solid #ccc;
+            background: #666699;
+            color: #000000;
+
+        }
+        #sidebarnav ul {
+            list-style: none;
+            margin: 0;
+            padding:0;
+        }
+        #sidebarnav  li{
+            float: left;
+            padding: 5px;
+        }
+        #sidebarnav li a{
+            display: inline-block;
+            background-color: #25BAFA;
+            border-radius: .3em;
+            padding: .5em;
+            text-decoration: none;
+            color: white;
+
+
+        }
+
 
         #map {
             height: 100%;
-            width: 70%;
+            width: 80%;
             float: right;
             clear: none;
         }
@@ -73,6 +102,7 @@
                 height: 18px;
                 list-style: none;
             }
+
     </style>
 
 </head>
@@ -98,25 +128,62 @@
             map.addLayer(basemap);
             $.getJSON("http://localhost:8080/geo", function (data) {
                 var geojson = L.geoJson(data, {
-                    style: hexstyle, onEachFeature: function (feature, layer) {
-                        layer.bindPopup('distance '+ layer.feature.properties.distance);
-                    }
+                    style: gpsStyle, onEachFeature: onEachFeature
                 }).addTo(map);
                 map.fitBounds(geojson.getBounds());
             });
+            // Add a scalebar
+            L.control.scale({ maxWidth: 300 }).addTo(map);
+            var info = L.control({ position: 'topright' });
+            info.onAdd = function (map) {
+                this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+                this.update();
+                return this._div;
+            };
+            info.update = function (props) {
+                this._div.innerHTML = '<h4>GPS Info</h4>' + 'Distance: '+(props ?
+                     + props.distance+' Miles'+'<br/>' +'Speed: '+ props.speed+ ' Miles Per Minute'
+                    : 'Hover over a GPS Segment');
+            };
+            info.addTo(map);
+            var items = []
+            $.getJSON("http://localhost:8080/geo", function (data) {
+                items = {};
+                $.each(data, function (key, val) {
+                    items[key] = val;
+                    console.log(items);
+                });
+
+
+              
+            });
+            document.getElementById('export').onclick = function (e) {
+
+                // Stringify the GeoJson
+                var convertedData = 'text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(items));
+                console.log(convertedData)
+
+                // Create export
+                document.getElementById('export').setAttribute('href', 'data:' + convertedData);
+                document.getElementById('export').setAttribute('download', 'data.geojson');
+            }
+            //var dwnld = "text/json;charset=utf-8," + encodeURI(JSON.stringify(items));
+            //console.log(dwnld)
+
+            //$('<a href="data:' + dwnld + '" download="geo">download JSON</a>').appendTo('#container');
+        
 
             //create a ramp for the traveltimes
             function getColor(min) {
-                return min > 5 ? '#00cc33' :
-                       min > 3? '#00cc00' :
-                       min > 1 ? '#0099ff' :
-                       min > .5 ? '#0099cc' :
+                return min > 3 ? '#00cc33' :
+                       min > 1.5? '#00cc00' :
+                       min > .5 ? '#0099ff' :
+                       min > .25 ? '#0099cc' :
                                   '#009999';
             }
 
-
-            // Style hexbins
-            function hexstyle(feature) {
+            // Style GPS Path Segments
+            function gpsStyle(feature) {
                 return {
                     fillOpacity: 0.15,
                     weight: 3,
@@ -124,27 +191,76 @@
                     color: getColor(feature.properties.distance)
                 };
             }
+            function highlight(e) {
+                var layer = e.target;
+                layer.setStyle({
+                    fillOpacity: 0.85,
+                    weight: 15,
+                    opacity: 1
+                });
+                info.update(layer.feature.properties);
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                    layer.bringToFront();
+                }
+            }
+            function resethighlight(e) {
+                var layer = e.target;
+                layer.setStyle({
+                    fillOpacity: 0.15,
+                    weight: 3,
+                    opacity: 1
+                });
+
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                    layer.bringToFront();
+                }
+            }
+
+            function resetHighlight(e) {
+                geojson.resetStyle(e.target);
+            }
+            function onEachFeature(feature, layer) {
+                layer.on({
+                    mouseover: highlight,
+                    mouseout: resethighlight
+                });
+            }
+
+        })
+            
 
 
 
-            // Add a scalebar
-            L.control.scale({ maxWidth: 300 }).addTo(map);
 
 
 
-        });
-</script>
+
+
+    
+    </script>
     <div id="sidebar">
         <h1>GPS</h1>
-        <form id='upload' action=''>
-            <label for='fileselect'>Files to upload:</label>
-            <input type='file' id='fileselect' multiple='multiple' />
-        </form>
-        <input type="button" value="Display GPS Route" onClick="window.location.reload()">
+
+                <form id='upload' action=''>
+                    <label for='fileselect'>Files to upload:</label>
+                    <input type='file' id='fileselect' multiple='multiple' />
+                </form>
+                <div id="sidebarnav">
+                    <ul>
+                        <li>
+                            <a href="." id='reload'>Display GPS Path</a>
+                        </li>
+                        <li>
+                            <a href='#' id='export'>Export Features</a>
+                        </li>
+                    </ul>
+                        </div>
+
+
 
     </div>
     <div id="map">
-        
+
     </div>
     <script>
         function upload(file) {
@@ -177,6 +293,7 @@
             }
             form.reset();
         });
+
     </script>
 </body>
 </html>
