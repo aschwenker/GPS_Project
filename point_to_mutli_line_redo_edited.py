@@ -30,6 +30,15 @@ def writer(filename):
     with open(destination, 'wb') as f:
         shutil.copyfileobj(cherrypy.request.body, f)
 
+
+def isTimeFormat(input):
+    try:
+        datetime.strptime(input, '%m/%d/%Y %H:%M:%S')
+        return True
+    except ValueError:
+        return False
+
+
 def haversine_np(x):
     """
     Calculate the great circle distance between two points
@@ -64,30 +73,35 @@ def gpsroute(filename,destination):
     featurelist = []
     lonlatlist = []
     latlonlist = []
-
+    timeheader = ''
     path = os.path.join(directory_name, filename)
     with open(path,'r') as csvfile:
         headerreader = csv.reader(csvfile)
         headers = headerreader.next()
     csvfile.close()
     for header in headers:
-        print header
-        if header.lower()== 'time':
+        if 'time' in header.lower():
             timeheader = header
         if 'lat' in header.lower():
             latheader = header
         if 'lon' in header.lower():
             lonheader = header
     with open(path,'r') as csvfile:
-        #reads csv written from uploaded file
         reader = csv.DictReader(csvfile)
         for row in reader:
-            time = row[timeheader]
-            print time
-            time = datetime.strptime(time,"%m/%d/%Y %H:%M:%S")
+            timeraw=row[timeheader]
+            print timeraw
+            if isTimeFormat(timeraw):       
+                time = datetime.strptime(timeraw,"%m/%d/%Y %H:%M:%S")
+                print time
+                lonlatlist.append([[row[lonheader],row[latheader]],time])
+            else:
+                time = datetime.strptime(timeraw,"%m/%d/%Y %H:%M")
+                lonlatlist.append([[row[lonheader],row[latheader]],time])
             #appends to a list to the list: [(lat, lon ),time]
-            lonlatlist.append([[row[lonheader],row[latheader]],time])
+            
             #lat, lon, time
+    print lonlatlist
     lonlatlist =sorted(lonlatlist, key=lambda x: x[1])
     #sorts on time
     for listlon in lonlatlist:
@@ -119,6 +133,7 @@ def gpsroute(filename,destination):
         valuedict["properties"]["speed"] = speed
         valuedict["properties"]["duration"] = duration
         featurelist.append(valuedict)
+        print featurelist
     results["features"] = featurelist
 
     with open (destination,'w')as outfile:
