@@ -1,5 +1,10 @@
-import csv
+import json
+import uuid
+import tempfile
+import os
 import datetime
+import psycopg2  as pg
+import config as conf
 from math import radians, cos, sin, asin, sqrt
 
 
@@ -112,19 +117,99 @@ def MagAccelCal(accelx, accely, accelz):
     return moa
 
 
+def ProcessMobileData(name):
+    # fetch data from mobile db
+    name = 'lsava7'
+    cnxn = pg.connect(host=conf.db["host"], database=conf.db["database"], user=conf.db["user"],
+                      password=conf.db["password"])
+    cursor = cnxn.cursor()
+
+    try:
+        sql = "SELECT lon,lat,time,accelx,accely,accelz FROM mobiledb WHERE userid = '{0}' ".format(name)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+
+
+        # lists to store feed data
+        _lon = []
+        _lat = []
+        _time = []
+        _accelx = []
+        _accely = []
+        _accelz = []
+
+        # Populate the respective lists with the GPS coordinates, xyz readings, and time data
+        for x in xrange(len(data)):
+            _lon.append(float(data[x][0]))
+            _lat.append(float(data[x][1]))
+            _time.append(datetime.datetime.strptime((data[x][2])[:-3], "%Y-%m-%d %H:%M:%S"))
+            _accelx.append(float(data[x][3]))  # x values
+            _accely.append(float(data[x][4]))  # y values
+            _accelz.append(float(data[x][5]))  # z values
+
+        # lists to store calculation
+        _distance = Haversine(_lon, _lat)
+        _timeInterval = TimeInterval(_time)
+        _speed = SpeedCal(_distance, _timeInterval)
+        _magAccel = MagAccelCal(_accelx, _accely, _accelz)
+
+        # smooth values with rolling windows
+        _avgSpeed = RollingWindow(_speed, len(_speed), 12, 'm')  # uses 1 min of context
+        _magAccel = RollingWindow(_magAccel, len(_speed), 12, 'v')  # uses 1 min of context
+
+    finally:
+        cursor.close()
+        cnxn.close()
+
+    return _lat,_lon, _distance, _avgSpeed, _magAccel
+
+
+def ReturnGeoJSON(data):
+
+    # create geojson for mobile data
+    _featureCollection = {"type": "FeatureCollection",
+                          "features": []}
+
+    _feature = {"type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": []},
+                "properties": {"distance": "", "speed": "", "activity metric": ""}}
+
+    # assign mobile data to geojson
+    _feature["geometry"]["coordinates"] = data[0], data[1] #_lat, _lon
+    _feature["properties"]["distance"] =  data[2]          #_distance
+    _feature["properties"]["speed"] =     data[3]          #_avgSpeed
+    _feature["properties"]["activity metric"] = data[4]    #_magAccel
+    _featureCollection["features"] = _feature
+
+    # create output file for geojson
+    directory_name = tempfile.mkdtemp()
+    filename = str(uuid.uuid4())
+    jsonfilename = str(uuid.uuid4())
+    jsondestination = os.path.join(directory_name, jsonfilename)
+
+    with open(jsondestination, 'w')as outputfile:
+        json.dump(_featureCollection, outfile)
+
+    return outputfile
+
 if __name__ == '__main__':
 
-    # file location
-    dfile = 'C:\Users\carsi\Desktop\sample_data\lsava7Data.csv'
+    # fetch data from mobile db
+    name = 'lsava7'
+    cnxn = pg.connect(host=conf.db["host"], database=conf.db["database"], user=conf.db["user"],
+                      password=conf.db["password"])
+    cursor = cnxn.cursor()
 
-    # Open data and read into a 2-D list
-    with open(dfile) as d:
-        reader = csv.reader(d)
-        data = list(reader)
+    try:
+        sql = "SELECT lon,lat,time,accelx,accely,accelz FROM mobiledb WHERE userid = '{0}' ".format(name)
+        cursor.execute(sql)
+        data = cursor.fetchall()
 
+    finally:
+        cursor.close()
+        cnxn.close()
 
     # lists to store feed data
-    #_pid =[]
     _lon = []
     _lat = []
     _time = []
@@ -132,20 +217,15 @@ if __name__ == '__main__':
     _accely = []
     _accelz = []
 
-
-    # Populate the respective lists with the squared xyz values and time data
+    # Populate the respective lists with the GPS coordinates, xyz readings, and time data
     for x in xrange(len(data)):
-        if data[x][1] == 'pid':
-            pass
-        else:
-            _lon.append(float(data[x][2]))
-            _lat.append(float(data[x][3]))
-            _time.append(datetime.datetime.strptime(str(data[x][5]), "%Y-%m-%d %H:%M:%S"))
-            _accelx.append(float(data[x][11]))  # x values
-            _accely.append(float(data[x][12]))  # y values
-            _accelz.append(float(data[x][13]))  # z values
+        _lon.append(float(data[x][0]))
+        _lat.append(float(data[x][1]))
+        _time.append(datetime.datetime.strptime((data[x][2])[:-3], "%Y-%m-%d %H:%M:%S"))
+        _accelx.append(float(data[x][3]))  # x values
+        _accely.append(float(data[x][4]))  # y values
+        _accelz.append(float(data[x][5]))  # z values
 
-    #_pid = xrange(len(_lon))
 
     # lists to store calculation
     _distance = Haversine(_lon,_lat)
@@ -153,9 +233,45 @@ if __name__ == '__main__':
     _speed = SpeedCal(_distance,_timeInterval)
     _magAccel = MagAccelCal(_accelx, _accely, _accelz)
 
-    print '# smoothing of values'
-    avgspeed = RollingWindow(_speed, len(_speed),24,'m') # uses 2 min of context
-    magAccel=  RollingWindow( _magAccel, len(_speed),24,'v') # uses 2 min of context
+    # smooth values with rolling windows
+    _avgSpeed = RollingWindow(_speed, len(_speed),12,'m') # uses 1 min of context
+    _magAccel=  RollingWindow( _magAccel, len(_speed),12,'v') # uses 1 min of context
 
-    print "burr"
+
+
+    #make json of features
+    _featureCollection = {"type": "FeatureCollection",
+                          "features": []}
+
+    _feature = {"type": "Feature",
+                "geometry":{"type" : "LineString","coordinates":[]},
+                "properties":{"distance":"","speed":"","activity metric":""}}
+
+
+    # for x in xrange(len(data)):
+        #x = latlonlist[a][0], latlonlist[b][0]
+        #k =_lat[x],_lon[x]
+    _feature["geometry"]["coordinates"] = _lat, _lon
+    _feature["properties"]["distance"] = _distance
+    _feature["properties"]["speed"] = _avgSpeed
+    _feature["properties"]["activity metric"] = _magAccel
+    _featureCollection["features"] = _feature
+
+    directory_name = tempfile.mkdtemp()
+    filename = str(uuid.uuid4())
+    jsonfilename = str(uuid.uuid4())
+    jsondestination = os.path.join(directory_name, jsonfilename)
+
+
+    with open(jsondestination, 'w')as outfile:
+        json.dump( _featureCollection, outfile)
+
+
+    #function calls
+    data =ProcessMobileData(name)
+    outputfile =ReturnGeoJSON(data)
+
+
+    print"results"
+
 
