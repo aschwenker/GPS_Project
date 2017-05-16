@@ -1,11 +1,12 @@
 
 import os
+from os.path import abspath
 import cherrypy
 import shutil
 import tempfile
 import uuid
 from Modules import gpsroute
-
+current_dir = os.path.dirname(os.path.abspath(__file__)) + os.path.sep
 config = {
   'global' : {
     'server.socket_host' : '127.0.0.1',
@@ -14,7 +15,14 @@ config = {
     'server.environment' : "production",
     'engine.autoreload_on' : True,
     'engine.autoreload_frequency' : 60
-  }
+    },
+    '/':{
+  'tools.staticdir.root' : current_dir
+    },
+    '/static':{
+    'tools.staticdir.on' : True,
+    'tools.staticdir.dir': 'static',
+    },
 }
 
 def writer(csvdestination):
@@ -45,6 +53,7 @@ class App:
         gpsroute(self.csvdestination,self.jsondestination)
         """used as a static geojson sample to test html geojson link load worked"""
         return file(self.jsondestination)
+
 
         
 

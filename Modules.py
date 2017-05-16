@@ -63,10 +63,8 @@ def gpsroute(csvdestination,jsondestination):
         reader = csv.DictReader(csvfile)
         for row in reader:
             timeraw=row[timeheader]
-            print timeraw
             if isTimeFormat(timeraw):       
                 time = datetime.strptime(timeraw,"%m/%d/%Y %H:%M:%S")
-                print time
                 lonlatlist.append([[row[lonheader],row[latheader]],time])
             else:
                 time = datetime.strptime(timeraw,"%m/%d/%Y %H:%M")
@@ -91,16 +89,21 @@ def gpsroute(csvdestination,jsondestination):
         x=latlonlist[i][0],latlonlist[i+1][0]
         #((lon,lat),(lon,lat)) (tuple,tuple) represents start & end of line seg
         distance = round(haversine_np(x),2)
-        time = latlonlist[i][1]-latlonlist[i+1][1]
+        time = latlonlist[i+1][1]-latlonlist[i][1]
         #start and end time for seg
-        duration = (time.seconds/60)
-        if duration > 0:
+        print (float(time.seconds))
+        duration = ((float(time.seconds))/3600)
+        #converts to hours
+        print duration
+        if float(duration) > 0:
+            print float(distance),"/",float(duration)
             speed = round((float(distance)/float(duration)),2)
         else:
             speed = 0
         x=latlonlist[i][0],latlonlist[i+1][0]
         valuedict["geometry"]["coordinates"] =x
         valuedict["properties"]["distance"] = distance
+        print speed
         valuedict["properties"]["speed"] = speed
         valuedict["properties"]["duration"] = duration
         featurelist.append(valuedict)

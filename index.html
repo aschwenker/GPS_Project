@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <title>GPS Uploader</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
 
@@ -9,125 +10,7 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        #sidebar {
-            position: fixed;
-            width: 17%;
-            height: 100%;
-            padding: 10px 20px;
-            font: 1em Arial, Helvetica, sans-serif;
-            color: white;
-            background: #36454f;
-            box-shadow: 0 15px 15px 0 rgba(0,0,0,0.4);
-            z-index: 2;
-        }
-
-        #sidebarnav {
-            position: relative;
-            width: 50%;
-            background-color: #25BAFA;
-            border-left-style: 2px solid #ccc;
-            background: #666699;
-            color: #000000;
-        }
-
-            #sidebarnav ul {
-                list-style: none;
-                margin: 0;
-                padding: 0;
-            }
-
-            #sidebarnav li {
-                float: left;
-                padding: 5px;
-            }
-
-                #sidebarnav li a {
-                    display: inline-block;
-                    background-color: #25BAFA;
-                    border-radius: .3em;
-                    padding: .5em;
-                    text-decoration: none;
-                    color: white;
-                }
-
-
-        #map {
-            height: 100%;
-            width: 80%;
-            float: right;
-            clear: none;
-        }
-
-
-        .info {
-            width: 12vw;
-            height: auto;
-            float: right;
-            padding: 10px 10px;
-            font: 14px/16px Arial, Helvetica, sans-serif;
-            background: white;
-            background: rgba(255,255,255,.90);
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            border-radius: 5px;
-        }
-
-            .info h4 {
-                margin: 0 0 5px;
-                color: #777;
-            }
-
-        .legend {
-            color: #555;
-            height: auto;
-        }
-
-            .legend ul {
-                padding: 0px;
-                margin: 0px;
-            }
-
-            .legend i {
-                width: 18px;
-                height: 18px;
-                float: left;
-                margin-right: 8px;
-                opacity: 0.7;
-            }
-
-            .legend li {
-                height: 18px;
-                list-style: none;
-            }
-
-        .fileUpload {
-
-            display: inline-block;
-            background-color: #25BAFA;
-            border-radius: .3em;
-            padding: .5em;
-            text-decoration: none;
-            color: white;
-        }
-
-            .fileUpload input.upload {
-                position: absolute;
-                top: 0;
-                right: 0;
-                margin: 0;
-                padding: 0;
-                font-size: 20px;
-                cursor: pointer;
-                opacity: 0;
-                filter: alpha(opacity=0);
-            }
-    </style>
+    <link rel="stylesheet" type="text/css" href="/static/styleSheet.css" />
 
 </head>
 <body>
@@ -167,7 +50,7 @@
             };
             info.update = function (props) {
                 this._div.innerHTML = '<h4>GPS Info</h4>' + 'Distance: ' + (props ?
-                     +props.distance + ' Miles' + '<br/>' + 'Speed: ' + props.speed + ' Miles Per Minute'
+                     +props.distance + ' Miles' + '<br/>' + 'Pace: ' + props.speed + ' Miles Per Hour'
                     : 'Hover over a GPS Segment');
             };
             info.addTo(map);
@@ -199,11 +82,47 @@
 
 
             //create a ramp for the traveltimes
-            var values = [];
-            for (var i = 0; i < data.feature.properties.distance; i++) {
-                values.push(data.feature[i].properties.distance);
-            }
-            brew.setNumClasses(5);
+            var items = []
+            var values = []
+            console.log(typeof values);
+                items = {};
+                
+
+                
+                $.getJSON("http://localhost:8080/geo", function (data) {
+                    values = [];
+                    $.each(data, function (key, val) {
+                        var zzz = val;
+                        $(zzz).each(function (arrayID, group) {
+                            console.log(typeof group);
+                            $.each(group, function (ky, vl) {
+                                console.log(vl);
+                                var dict = vl;
+                                console.log(dict);
+                                console.log(typeof dict);
+                                console.log(dict.distance);
+                                console.log(typeof (dict.distance));
+                                var stuff = (dict.distance);
+                                console.log(stuff);
+                                values.push(stuff);
+                                console.log(values);
+                                console.log(typeof values);
+                                console.log(values.sort());
+
+
+
+                    });
+                    });
+                    });
+                    console.log(Math.max.apply(Math, values));
+                    console.log(Math.min.apply(Math, values));
+                });
+                console.log(values);
+                console.log(typeof values);
+                
+
+
+            //brew.setNumClasses(5);
 
             function getColor(min) {
                 return min > 3 ? '#00cc33' :
@@ -269,7 +188,7 @@
 
 
     </script>
-    <div id="sidebar">
+    <div id="sidebar" class="sidebar">
         <h1>GPS</h1>
         <h4>Field Name Specifications</h4>
         <h5>Latitude field must include 'lat' <br /> Longitude field must include 'lon'<br /> Time field must include 'time' in name and there can only be one</h5>
@@ -278,7 +197,7 @@
             //add string form stuff here
         </form>
 
-        <div id="sidebarnav">
+        <div id="sidebarnav" class="sidebarnav">
             <ul>
                 <li>
                     <div class="fileUpload btn btn-primary">
@@ -286,6 +205,7 @@
                             <span>Upload</span>
                             <input type='file' id='fileselect' multiple='multiple' class="upload">
                         </form>
+                   </div>
                 </li>
                 <li>
                     <a href="." id='reload'>Display GPS Path</a>
@@ -299,7 +219,11 @@
 
 
     </div>
-    <div id="map">
+    <div id="map"  style="height: 100%;
+            width: 100%;
+            float: right;
+            clear: none;
+            position: fixed" >
 
     </div>
     <script>
