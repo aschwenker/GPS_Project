@@ -169,6 +169,33 @@ def ProcessMobileData(name):
     return _lat,_lon, _distance, _avgSpeed, _magAccel
 
 
+def ReturnGeoJSON(_jsondestination,data):
+        # create geojson for mobile data
+        _featureCollection = {"type": "FeatureCollection",
+                              "features": []}
+
+        _feature = {"type": "Feature",
+                    "geometry": {"type": "LineString", "coordinates": []},
+                    "properties": {"distance": "", "speed": "", "activity metric": ""}}
+
+        # assign mobile data to geojson
+        _featureslist = []
+        for x in xrange(len(data[0]) - 1):
+            val = [data[0][x], data[1][x]], [data[0][x + 1], data[1][x + 1]]
+            _feature["geometry"]["coordinates"] = val  # _lat, _lon
+            _feature["properties"]["distance"] = data[2][x]  # _distance
+            _feature["properties"]["speed"] = data[3][x]  # _avgSpeed
+            _feature["properties"]["activity metric"] = data[4][x]  # _magAccel
+            _featureslist.append(_feature)
+        _featureCollection["features"] = _featureslist
+
+        # create output file for geojson
+
+
+        with open(_jsondestination, 'w')as _outputfile:
+            json.dump(_featureCollection, _outputfile)
+
+
 # def ReturnGeoJSON(data):
 #
 #     # create geojson for mobile data
@@ -202,9 +229,9 @@ def ProcessMobileData(name):
 
 
 class App:
-    # jsonfilename = str(uuid.uuid4())
-    # jsondestination = os.path.join(directory_name, jsonfilename)
-
+    _directory = tempfile.mkdtemp()
+    _jsonfilename = str(uuid.uuid4())
+    _jsondestination = os.path.join(_directory, _jsonfilename)
     @cherrypy.expose
     def index(self):
         """loads the index file"""
@@ -214,39 +241,12 @@ class App:
         print type(name)
         x =str(name)
         data =ProcessMobileData(x)
-        outputfile =ReturnGeoJSON(data)
-        return x
+        ReturnGeoJSON(self.jsondestination,data)
+
 
     @cherrypy.expose
-    def ReturnGeoJSON(self,data):
-        # create geojson for mobile data
-        _featureCollection = {"type": "FeatureCollection",
-                              "features": []}
-
-        _feature = {"type": "Feature",
-                    "geometry": {"type": "LineString", "coordinates": []},
-                    "properties": {"distance": "", "speed": "", "activity metric": ""}}
-
-        # assign mobile data to geojson
-        _featureslist = []
-        for x in xrange(len(data[0]) - 1):
-            val = [data[0][x], data[1][x]], [data[0][x + 1], data[1][x + 1]]
-            _feature["geometry"]["coordinates"] = val  # _lat, _lon
-            _feature["properties"]["distance"] = data[2][x]  # _distance
-            _feature["properties"]["speed"] = data[3][x]  # _avgSpeed
-            _feature["properties"]["activity metric"] = data[4][x]  # _magAccel
-            _featureslist.append(_feature)
-        _featureCollection["features"] = _featureslist
-
-        # create output file for geojson
-        _directory = tempfile.mkdtemp()
-        _jsonfilename = str(uuid.uuid4())
-        _jsondestination = os.path.join(_directory, _jsonfilename)
-
-        with open(_jsondestination, 'w')as _outputfile:
-            json.dump(_featureCollection, _outputfile)
-
-        return _jsondestination
+    def dbgeo(self):
+        return file(self.jsondestination)
 
 if __name__ == '__main__':
     cherrypy.quickstart(App(), '/', conf.config)
@@ -327,17 +327,5 @@ if __name__ == '__main__':
 
     #function calls
     # data =ProcessMobileData('lsava7')
-    # outputfile =ReturnGeoJSON(data)
-
-
-
-
-
-
-
-
-
-
-    print"results"
-
+    # outputfile =ReturnGeoJSON(data
 
