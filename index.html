@@ -1,25 +1,188 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿<html>
 <head>
     <title>GPS Uploader</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />    
     <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.11/themes/css/cartodb.css" />
-
+	
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-    <link rel="stylesheet" type="text/css" href="/static/styleSheet.css" />
+	<script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+	<link rel="stylesheet" type="text/css" href="/static/stylesheet.css" />
+	
+<style>
+body
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 100%;
+            width: 70px;
+            float: right;
+            clear: none;
+        }
 
-</head>
-<body>
-    <script>
+        #sidebar {
+            position: fixed;
+            width: 200px;
+            height: 100%;
+            padding: 10px 20px;
+            font: 1em Arial, Helvetica, sans-serif;
+            color: white;
+            background: #36454f;
+            box-shadow: 0 15px 15px 0 rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+
+        #sidebarnav {
+            position: relative;
+            width: 50%;
+            background-color: #25BAFA;
+            border-left-style: 2px solid #ccc;
+            background: #666699;
+            color: #000000;
+        }
+
+            #sidebarnav ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            #sidebarnav li {
+                float: left;
+                padding: 5px;
+            }
+
+                #sidebarnav li a {
+                    display: inline-block;
+                    background-color: #25BAFA;
+                    border-radius: .3em;
+                    padding: .5em;
+                    text-decoration: none;
+                    color: white;
+                }
+
+
+
+
+
+        .info {
+            width: 12vw;
+            height: auto;
+            float: right;
+            padding: 10px 10px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,.90);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+
+            .info h4 {
+                margin: 0 0 5px;
+                color: #777;
+            }
+
+        .legend {
+            color: #555;
+            height: auto;
+        }
+
+            .legend ul {
+                padding: 0px;
+                margin: 0px;
+            }
+
+            .legend i {
+                width: 18px;
+                height: 18px;
+                float: left;
+                margin-right: 8px;
+                opacity: 0.7;
+            }
+
+            .legend li {
+                height: 18px;
+                list-style: none;
+            }
+
+        .fileUpload {
+
+            display: inline-block;
+            background-color: #25BAFA;
+            border-radius: .3em;
+            padding: .5em;
+            text-decoration: none;
+            color: white;
+        }
+
+            .fileUpload input.upload {
+                position: absolute;
+                top: 0;
+                right: 0;
+                margin: 0;
+                padding: 0;
+                font-size: 20px;
+                cursor: pointer;
+                opacity: 0;
+                filter: alpha(opacity=0);
+            }
+</style>
+	
+	
+<script>
+        function upload(file) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function (event) {
+                console.log('progess', file.name, event.loaded, event.total);
+            });
+            xhr.addEventListener('readystatechange', function (event) {
+                console.log(
+                  'ready state',
+                  file.name,
+                  xhr.readyState,
+                  xhr.readyState == 4 && xhr.status
+                );
+            });
+
+            xhr.open('POST', '/upload', true);
+            xhr.setRequestHeader('X-Filename', file.name);
+
+            console.log('sending', file.name, file);
+            xhr.send(file);
+        }
+
+        var select = document.getElementById('fileselect');
+        var form = document.getElementById('upload')
+        select.addEventListener('change', function (event) {
+            for (var i = 0; i < event.target.files.length; i += 1) {
+                upload(event.target.files[i]);
+            }
+            form.reset();
+        });
+	
+ </script>
+	
+	<script>
         // When the webpage is ready (loaded)
         $(document).ready(function () {
+			// Move me if you need to !
+			$("#getGeoJsonButton").on("click", function(){
+				$.ajax({
+					dataType: "json",
+					url: "http://127.0.0.1:8080/generate?name=lsava7",
+					success: function(data) {
+						var geojson = L.geoJson(data).addTo(map);
+						// To zoom, you can add this:
+						map.fitBounds(geojson.getBounds());
+					  }
+				});
+			});
+		
             var map = new L.Map('map',
-                {
-                    center: [40.75, -73.95],
+                {   center:[40.75, -73.95],
                     zoom: 12
                 });
             // Credit where credit is due
@@ -49,8 +212,8 @@
                 return this._div;
             };
             info.update = function (props) {
-                this._div.innerHTML = '<h4>GPS Info</h4>' + 'Distance: ' + (props ?
-                     +props.distance + ' Miles' + '<br/>' + 'Pace: ' + props.speed + ' Miles Per Hour'
+                this._div.innerHTML = '<h4>GPS Info</h4>' + 'Distance: '+(props ?
+                     + props.distance+' Miles'+'<br/>' +'Speed: '+ props.speed+ ' Miles Per Minute'
                     : 'Hover over a GPS Segment');
             };
             info.addTo(map);
@@ -63,7 +226,7 @@
                 });
 
 
-
+              
             });
             document.getElementById('export').onclick = function (e) {
 
@@ -79,54 +242,12 @@
             //console.log(dwnld)
 
             //$('<a href="data:' + dwnld + '" download="geo">download JSON</a>').appendTo('#container');
-
+        
 
             //create a ramp for the traveltimes
-            var items = []
-            var values = []
-            console.log(typeof values);
-                items = {};
-                
-
-                
-                $.getJSON("http://localhost:8080/geo", function (data) {
-                    values = [];
-                    $.each(data, function (key, val) {
-                        var zzz = val;
-                        $(zzz).each(function (arrayID, group) {
-                            console.log(typeof group);
-                            $.each(group, function (ky, vl) {
-                                console.log(vl);
-                                var dict = vl;
-                                console.log(dict);
-                                console.log(typeof dict);
-                                console.log(dict.distance);
-                                console.log(typeof (dict.distance));
-                                var stuff = (dict.distance);
-                                console.log(stuff);
-                                values.push(stuff);
-                                console.log(values);
-                                console.log(typeof values);
-                                console.log(values.sort());
-
-
-
-                    });
-                    });
-                    });
-                    console.log(Math.max.apply(Math, values));
-                    console.log(Math.min.apply(Math, values));
-                });
-                console.log(values);
-                console.log(typeof values);
-                
-
-
-            //brew.setNumClasses(5);
-
             function getColor(min) {
                 return min > 3 ? '#00cc33' :
-                       min > 1.5 ? '#00cc00' :
+                       min > 1.5? '#00cc00' :
                        min > .5 ? '#0099ff' :
                        min > .25 ? '#0099cc' :
                                   '#009999';
@@ -177,87 +298,44 @@
             }
 
         })
-
-
-
-
-
-
-
-
-
-
+        
+ 
     </script>
-    <div id="sidebar" class="sidebar">
+</head>
+
+
+<body>
+    <div id="sidebar">
         <h1>GPS</h1>
-        <h4>Field Name Specifications</h4>
-        <h5>Latitude field must include 'lat' <br /> Longitude field must include 'lon'<br /> Time field must include 'time' in name and there can only be one</h5>
 
-        <form id='unqiue' action=''>
-            //add string form stuff here
-        </form>
-
-        <div id="sidebarnav" class="sidebarnav">
-            <ul>
-                <li>
-                    <div class="fileUpload btn btn-primary">
-                        <form id='upload' action=''>
-                            <span>Upload</span>
-                            <input type='file' id='fileselect' multiple='multiple' class="upload">
-                        </form>
-                   </div>
-                </li>
-                <li>
-                    <a href="." id='reload'>Display GPS Path</a>
-                </li>
-                <li>
-                    <a href='#' id='export'>Export Features</a>
-                </li>
-            </ul>
-        </div>
+                <form id='upload' action=''>
+                    <label for='fileselect'>Files to upload:</label>
+                    <input type='file' id='fileselect' multiple='multiple' />
+                </form>
+                <div id="sidebarnav">
+                    <ul>
+                        <li>
+                            <a href="." id='reload'>Display GPS Path</a>
+                        </li>
+                        <li>
+                            <a href='#' id='export'>Export Features</a>
+                        </li>
+                    </ul>
+                        </div>
+						
+				<!-- <form method="get" action="generate"> -->
+				<!--<label for='mobile'>Enter mobile userid:</label>-->
+				<input type="text" value="Enter mobile userid" name="name" />
+				<button id="getGeoJsonButton">Map</button> <!--type="submit"  -->
+				<!-- </form> -->
 
 
 
     </div>
-    <div id="map"  style="height: 100%;
-            width: 100%;
-            float: right;
-            clear: none;
-            position: fixed" >
+	
+	<div id="map">
 
-    </div>
-    <script>
-        function upload(file) {
-            var xhr = new XMLHttpRequest();
+	</div>
 
-            xhr.upload.addEventListener('progress', function (event) {
-                console.log('progess', file.name, event.loaded, event.total);
-            });
-            xhr.addEventListener('readystatechange', function (event) {
-                console.log(
-                  'ready state',
-                  file.name,
-                  xhr.readyState,
-                  xhr.readyState == 4 && xhr.status
-                );
-            });
-
-            xhr.open('POST', '/upload', true);
-            xhr.setRequestHeader('X-Filename', file.name);
-
-            console.log('sending', file.name, file);
-            xhr.send(file);
-        }
-
-        var select = document.getElementById('fileselect');
-        var form = document.getElementById('upload')
-        select.addEventListener('change', function (event) {
-            for (var i = 0; i < event.target.files.length; i += 1) {
-                upload(event.target.files[i]);
-            }
-            form.reset();
-        });
-
-    </script>
 </body>
 </html>
