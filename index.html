@@ -40,6 +40,7 @@
             var values = []
             var top = []
             var bottom = []
+            var geojson = []
             $.getJSON("http://localhost:8080/geo", function (data) {
                 for (var i = 0; i < data.features.length; i++) {
                     values.push(data.features[i].properties.distance);
@@ -54,7 +55,7 @@
 			
 			// //adds geojsonlayer created from file upload
             $.getJSON("http://localhost:8080/geo", function (data) {
-                var geojson = new L.geoJson(data, {
+                geojson = new L.geoJson(data, {
                     style: gpsStyle, onEachFeature: onEachFeature
                 }).addTo(map);
                 map.fitBounds(geojson.getBounds());
@@ -65,12 +66,12 @@
 					dataType: "json",
 					url: "http://127.0.0.1:8080/generate?name=lsava7",
 					success: function(data) {
-						var geojson = new L.geoJson(data, {
+						var dbgeojson = new L.geoJson(data, {
 						style: gpsStyle, onEachFeature: onEachFeature
 					}).addTo(map);
 						//var geojson = L.geoJson(data).addTo(map);
 						// To zoom, you can add this:
-						map.fitBounds(geojson.getBounds());
+						map.fitBounds(dbgeojson.getBounds());
 					  }
 				});
 			});       
@@ -119,6 +120,7 @@
 
 
 
+
             });
             document.getElementById('export').onclick = function (e) {
 
@@ -131,8 +133,8 @@
                 document.getElementById('export').setAttribute('download', 'data.geojson');
             }
             document.getElementById('clear').onclick = function (e) {
-                map.removeLayer(geojson);
-                document.getElementById('clear').setAttribute('href', "http://localhost:8080/");
+                geojson.remove();
+
 
             }
 
@@ -197,39 +199,7 @@
 	</script>
 
 	
-	<script>
-        function upload(file) {
-            var xhr = new XMLHttpRequest();
-
-            xhr.upload.addEventListener('progress', function (event) {
-                console.log('progess', file.name, event.loaded, event.total);
-            });
-            xhr.addEventListener('readystatechange', function (event) {
-                console.log(
-                  'ready state',
-                  file.name,
-                  xhr.readyState,
-                  xhr.readyState == 4 && xhr.status
-                );
-            });
-
-            xhr.open('POST', '/upload', true);
-            xhr.setRequestHeader('X-Filename', file.name);
-
-            console.log('sending', file.name, file);
-            xhr.send(file);
-        }
-
-        var select = document.getElementById('fileselect');
-        var form = document.getElementById('upload')
-        select.addEventListener('change', function (event) {
-            for (var i = 0; i < event.target.files.length; i += 1) {
-                upload(event.target.files[i]);
-            }
-            form.reset();
-        });
-        
-	</script>
+	
 
  </head>
 
@@ -265,15 +235,16 @@
                     <a href='#' id='clear'>Clear Features</a>
 					
 				</li>
-                
-				<li>
-                    
-                    
-                    <input type="text" value="Enter mobile userid" name="name" />
-					<button id="getGeoJsonButton">Map</button> 
-                    
-				</li>
+
             </ul>
+        </div>
+        
+        <div class="fileUpload btn btn-primary">
+            <p>Database Signin Below</p>
+            <form id="textupload" action=' '>
+                <input type="text" value="Enter mobile userid" name="name" />
+                <button id="getGeoJsonButton">Map</button>
+            </form>
         </div>
     </div>
 	
@@ -285,6 +256,38 @@
             position: fixed" >
 
     </div>
-    
+    <script>
+        function upload(file) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function (event) {
+                console.log('progess', file.name, event.loaded, event.total);
+            });
+            xhr.addEventListener('readystatechange', function (event) {
+                console.log(
+                  'ready state',
+                  file.name,
+                  xhr.readyState,
+                  xhr.readyState == 4 && xhr.status
+                );
+            });
+
+            xhr.open('POST', '/upload', true);
+            xhr.setRequestHeader('X-Filename', file.name);
+
+            console.log('sending', file.name, file);
+            xhr.send(file);
+        }
+
+        var select = document.getElementById('fileselect');
+        var form = document.getElementById('upload')
+        select.addEventListener('change', function (event) {
+            for (var i = 0; i < event.target.files.length; i += 1) {
+                upload(event.target.files[i]);
+            }
+            form.reset();
+        });
+
+    </script>
 </body>
 </html>

@@ -1,8 +1,7 @@
-import shutil
+
 from functions import *
 
-html = 'C:\Users\carsi\Desktop\sample_data\index.html'
-current_dir = os.path.dirname(os.path.abspath(__file__)) + os.path.sep
+html = 'C:\Users\ASchwenker\Documents\GitHub\GPS_Project\index.html'
 
 class App:
     directory_name = tempfile.mkdtemp()
@@ -31,10 +30,7 @@ class App:
         data = ProcessMobileData(str(name))
         return json.dumps(ReturnGeoJSON(data))
 
-    @cherrypy.expose
-    def writer(csvdestination):
-        with open(csvdestination, 'wb') as f:
-            shutil.copyfileobj(cherrypy.request.body, f)
+
         
 
 if __name__ == '__main__':

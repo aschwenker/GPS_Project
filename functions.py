@@ -1,17 +1,20 @@
+import shutil
 import os
 import csv
 import json
 import uuid
 import tempfile
 import cherrypy
-#import datetime
 import numpy as np
 import psycopg2 as pg
 import config as conf
 from datetime import datetime
 from math import radians, cos, sin, asin, sqrt
 
-
+def writer(csvdestination):
+    with open(csvdestination, 'wb') as f:
+        shutil.copyfileobj(cherrypy.request.body, f)
+            
 def isTimeFormat(input):
     """allows us to determine the date format for further processes"""
     try:

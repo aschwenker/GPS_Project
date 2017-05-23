@@ -1,3 +1,6 @@
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__)) + os.path.sep
+
 db = {
     "host": "localhost",
     "database": "mobile",
@@ -14,6 +17,13 @@ config = {
     'server.environment' : "production",
     'engine.autoreload_on' : True,
     'engine.autoreload_frequency' : 60
-  }
+  },
+      '/':{
+  'tools.staticdir.root' : current_dir
+    },
+    '/static':{
+    'tools.staticdir.on' : True,
+    'tools.staticdir.dir': 'static',
+    },
 }
 
