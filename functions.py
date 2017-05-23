@@ -46,7 +46,8 @@ def haversine_np(x):
 
     c = 2 * np.arcsin(np.sqrt(a))
     km = 6367 * c
-    return km
+    mi = 0.621371 * km
+    return mi
 
 
 def gpsroute(csvdestination, jsondestination):
