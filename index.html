@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+
+<head>
+	<html lang="en">
+    <title>GPS Uploader</title>    
+    
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+	<link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.11/themes/css/cartodb.css" />
+	<link rel="stylesheet" type="text/css" href="/static/styleSheet.css" />	
+	
+	<script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+	
+
+	<script>
+        // When the webpage is ready (loaded)
+        $(document).ready(function () {
+											
+            var map = new L.Map('map',
+                {
+                    center: [40.75, -73.95],
+                    zoom: 12
+                });
+            // Credit where credit is due
+            var attribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>';
+
+            // Change this url to use different set of map tiles
+            var basemap_url = 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'
+
+            // add basemap
+            basemap = new L.TileLayer(basemap_url, {
+                maxZoom: 21,
+                attribution: attribution
+            });
+            // adds geojson layered created from csv upload
+            map.addLayer(basemap);
+            var items = []
+            var values = []
+            var top = []
+            var bottom = []
+            $.getJSON("http://localhost:8080/geo", function (data) {
+                for (var i = 0; i < data.features.length; i++) {
+                    values.push(data.features[i].properties.distance);
+                }
+
+                top = Math.max.apply(Math, values);
+                bottom = Math.min.apply(Math, values);
+                console.log(top)
+                console.log(bottom)
+                return top, bottom
+            });
+			
+			// //adds geojsonlayer created from file upload
+            $.getJSON("http://localhost:8080/geo", function (data) {
+                var geojson = new L.geoJson(data, {
+                    style: gpsStyle, onEachFeature: onEachFeature
+                }).addTo(map);
+                map.fitBounds(geojson.getBounds());
+            });
+            //adds geojsonlayer created from db access
+			$("#getGeoJsonButton").on("click", function(){
+				$.ajax({
+					dataType: "json",
+					url: "http://127.0.0.1:8080/generate?name=lsava7",
+					success: function(data) {
+						var geojson = new L.geoJson(data, {
+						style: gpsStyle, onEachFeature: onEachFeature
+					}).addTo(map);
+						//var geojson = L.geoJson(data).addTo(map);
+						// To zoom, you can add this:
+						map.fitBounds(geojson.getBounds());
+					  }
+				});
+			});       
+	   
+            // Add legend
+            var legend = L.control({ position: 'bottomright' });
+
+            legend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'info legend'),
+                    minbins = [top+1, bottom],
+                labels = ["Max Speed","Min Speed"];
+
+                // Loop through values and generate a label with a colored square for each
+                var html = '<h4>Estimated Travel Time (minutes)</h4>';
+                for (var i = 0; i < minbins.length; i++) {
+                    html +=
+                        '<li><i style="background:' + getColor(top,bottom,minbins[i]) + '"></i>' +
+                        " " + labels[i] + '</li>';
+                }
+                html += '</ul>'
+                div.innerHTML = html
+                return div;
+            };
+            legend.addTo(map);
+            // Add a scalebar
+            L.control.scale({ maxWidth: 300 }).addTo(map);
+            var info = L.control({ position: 'topright' });
+            info.onAdd = function (map) {
+                this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+                this.update();
+                return this._div;
+            };
+            info.update = function (props) {
+                this._div.innerHTML = '<h4>GPS Info</h4>' + 'Distance: ' + (props ?
+                     +props.distance + ' Miles' + '<br/>' + 'Pace: ' + props.speed + ' Miles Per Hour'
+                    : 'Hover over a GPS Segment');
+            };
+            info.addTo(map);
+            var items = []
+            $.getJSON("http://localhost:8080/geo", function (data) {
+                items = {};
+                $.each(data, function (key, val) {
+                    items[key] = val;
+                    console.log(items);
+                });
+
+
+
+            });
+            document.getElementById('export').onclick = function (e) {
+
+                // Stringify the GeoJson
+                var convertedData = 'text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(items));
+                console.log(convertedData)
+
+                // Create export
+                document.getElementById('export').setAttribute('href', 'data:' + convertedData);
+                document.getElementById('export').setAttribute('download', 'data.geojson');
+            }
+            document.getElementById('clear').onclick = function (e) {
+                map.removeLayer(geojson);
+                document.getElementById('clear').setAttribute('href', "http://localhost:8080/");
+
+            }
+
+
+            //create a ramp for the traveltimes
+
+            function getColor(top, bottom,min) {
+                return min > top-(top/3)? '#00cc33' :
+                       min > top / 2 ? '#FFFF66' :
+                       min > bottom ? '	#EE7600' :
+                       min == bottom ? '#fe2e2e' :
+                                  '#009999';
+            }
+
+            // Style GPS Path Segments
+            function gpsStyle(feature) {
+                return {
+                    fillOpacity: 0.15,
+                    weight: 3,
+                    opacity: 1,
+                    color: getColor(top, bottom,feature.properties.distance)
+                };
+            }
+            function highlight(e) {
+                var layer = e.target;
+                layer.setStyle({
+                    fillOpacity: 0.85,
+                    weight: 15,
+                    opacity: 1
+                });
+                info.update(layer.feature.properties);
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                    layer.bringToFront();
+                }
+            }
+            function resethighlight(e) {
+                var layer = e.target;
+                layer.setStyle({
+                    fillOpacity: 0.15,
+                    weight: 3,
+                    opacity: 1
+                });
+
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                    layer.bringToFront();
+                }
+            }
+
+            function resetHighlight(e) {
+                geojson.resetStyle(e.target);
+            }
+            function onEachFeature(feature, layer) {
+                layer.on({
+                    mouseover: highlight,
+                    mouseout: resethighlight
+                });
+            }
+
+        });
+
+
+	</script>
+
+	
+	<script>
+        function upload(file) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function (event) {
+                console.log('progess', file.name, event.loaded, event.total);
+            });
+            xhr.addEventListener('readystatechange', function (event) {
+                console.log(
+                  'ready state',
+                  file.name,
+                  xhr.readyState,
+                  xhr.readyState == 4 && xhr.status
+                );
+            });
+
+            xhr.open('POST', '/upload', true);
+            xhr.setRequestHeader('X-Filename', file.name);
+
+            console.log('sending', file.name, file);
+            xhr.send(file);
+        }
+
+        var select = document.getElementById('fileselect');
+        var form = document.getElementById('upload')
+        select.addEventListener('change', function (event) {
+            for (var i = 0; i < event.target.files.length; i += 1) {
+                upload(event.target.files[i]);
+            }
+            form.reset();
+        });
+        
+	</script>
+
+ </head>
+
+
+<body>
+    
+    <div id="sidebar" class="sidebar">
+        <h1>MapDiTrack</h1>
+        <h4>Field Name Specifications</h4>
+        <h5>Latitude field must include 'lat' <br /> Longitude field must include 'lon'<br /> Time field must include 'time' in name and there can only be one</h5>
+      
+		
+        <div id="sidebarnav" class="sidebarnav">
+            <ul>
+                <li>
+                    <div class="fileUpload btn btn-primary">
+                        <form id='upload' action=''>
+                            <span>Upload</span>
+                            <input type='file' id='fileselect' multiple='multiple' class="upload">
+                        </form>
+                   </div>
+                </li>
+                
+				<li>
+                    <a href="." id='reload'>Display GPS Path</a>
+                </li>
+                
+				<li>
+                    <a href='#' id='export'>Export Features</a>
+                </li>
+                
+				<li>
+                    <a href='#' id='clear'>Clear Features</a>
+					
+				</li>
+                
+				<li>
+                    
+                    
+                    <input type="text" value="Enter mobile userid" name="name" />
+					<button id="getGeoJsonButton">Map</button> 
+                    
+				</li>
+            </ul>
+        </div>
+    </div>
+	
+	
+    <div id="map"  style="height: 100%;
+            width: 100%;
+            float: right;
+            clear: none;
+            position: fixed" >
+
+    </div>
+    
+</body>
+</html>
