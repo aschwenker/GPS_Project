@@ -29,7 +29,7 @@ There several areas for advancing this project going forward. Hope to provide a 
  
 Authors 
 Anne Schwenker|
-Lerone Savage |lerone.savage23@myhunter.cuny.edu
+Lerone Savage |
  
 Acknowledgements
  
